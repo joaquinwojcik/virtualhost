@@ -8,7 +8,7 @@ domain=$2
 rootDir=$3
 owner=$(who am i | awk '{print $1}')
 apacheUser=$(ps -ef | egrep '(httpd|apache2|apache)' | grep -v root | head -n1 | awk '{print $1}')
-email='webmaster@localhost'
+email='administracion@streambe.com'
 sitesEnabled='/etc/apache2/sites-enabled/'
 sitesAvailable='/etc/apache2/sites-available/'
 userDir='/var/www/'
@@ -21,9 +21,9 @@ if [ "$(whoami)" != 'root' ]; then
 		exit 1;
 fi
 
-if [ "$action" != 'create' ] && [ "$action" != 'delete' ]
+if [ "$action" != 'create' ]
 	then
-		echo $"You need to prompt for action (create or delete) -- Lower-case only"
+		echo $"You need to prompt for action (create) -- Lower-case only"
 		exit 1;
 fi
 
@@ -73,7 +73,7 @@ if [ "$action" == 'create' ]
 		<VirtualHost *:80>
 			ServerAdmin $email
 			ServerName $domain
-			ServerAlias $domain
+			ServerAlias www.$domain
 			DocumentRoot $rootDir
 			<Directory />
 				AllowOverride All
@@ -134,50 +134,4 @@ if [ "$action" == 'create' ]
 		### show the finished message
 		echo -e $"Complete! \nYou now have a new Virtual Host \nYour new host is: http://$domain \nAnd its located at $rootDir"
 		exit;
-	else
-		### check whether domain already exists
-		if ! [ -e $sitesAvailabledomain ]; then
-			echo -e $"This domain does not exist.\nPlease try another one"
-			exit;
-		else
-			### Delete domain in /etc/hosts
-			newhost=${domain//./\\.}
-			sed -i "/$newhost/d" /etc/hosts
-
-			### Delete domain in /mnt/c/Windows/System32/drivers/etc/hosts (Windows Subsytem for Linux)
-			if [ -e /mnt/c/Windows/System32/drivers/etc/hosts ]
-			then
-				newhost=${domain//./\\.}
-				sed -i "/$newhost/d" /mnt/c/Windows/System32/drivers/etc/hosts
-			fi
-
-			### disable website
-			a2dissite $domain
-
-			### restart Apache
-			/etc/init.d/apache2 reload
-
-			### Delete virtual host rules files
-			rm $sitesAvailabledomain
-		fi
-
-		### check if directory exists or not
-		if [ -d $rootDir ]; then
-			echo -e $"Delete host root directory ? (y/n)"
-			read deldir
-
-			if [ "$deldir" == 'y' -o "$deldir" == 'Y' ]; then
-				### Delete the directory
-				rm -rf $rootDir
-				echo -e $"Directory deleted"
-			else
-				echo -e $"Host directory conserved"
-			fi
-		else
-			echo -e $"Host directory not found. Ignored"
-		fi
-
-		### show the finished message
-		echo -e $"Complete!\nYou just removed Virtual Host $domain"
-		exit 0;
 fi
